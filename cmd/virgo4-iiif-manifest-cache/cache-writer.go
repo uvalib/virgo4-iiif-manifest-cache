@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"net/http"
 	"net/url"
 	"log"
@@ -38,14 +39,21 @@ func NewCacheWriter(config *ServiceConfig) CacheWriter {
 func (c *cacheImpl) Cache(message *awssqs.Message) error {
 
 	// extract the manifest URL otherwise there is nothing to do
-	url, err := c.extractManifestUrl( message.Payload )
+	manifestUrl, err := c.extractManifestUrl( message.Payload )
 	if err == nil {
 
 		// did we extract a manifest URL
-		if len( url ) != 0 {
-			_, err = c.writeManifestToCache( url )
+		if len( manifestUrl ) != 0 {
+			newUrl, err := c.writeManifestToCache( manifestUrl )
 
-			// dont forget to update the message with the new URL
+			// if successful, update the payload with the new URL
+			if err == nil {
+				payload := string( message.Payload )
+				payload = strings.Replace( payload,
+					fmt.Sprintf( ">%s<", manifestUrl ),
+					fmt.Sprintf( ">%s<", newUrl ), 1 )
+				message.Payload = []byte(payload)
+			}
 		}
 	} else {
 		log.Printf("ERROR: parsing document, no caching possible: %s", err.Error())
@@ -62,16 +70,18 @@ func (c *cacheImpl) writeManifestToCache( url string ) ( string, error ) {
 	    body, err := httpGet(url, c.httpClient)
 	    if err == nil {
 	    	err = s3Add( c.cacheBucket, bucketKey, body )
+	    	if err == nil {
+	    		newUrl := fmt.Sprintf( "https://%s.s3.amazonaws.com/%s", c.cacheBucket, bucketKey )
+	    		return newUrl, nil
+			}
    	    } else {
 		    log.Printf("ERROR: endpoint %s returns %s", url, err)
-		    return "", err
 	    }
 	} else {
 		log.Printf("ERROR: parsing URL %s returns %s", url, err)
-		return "", err
 	}
 
-	return bucketKey, err
+	return "", err
 }
 
 // extract the manifest URL from the document
