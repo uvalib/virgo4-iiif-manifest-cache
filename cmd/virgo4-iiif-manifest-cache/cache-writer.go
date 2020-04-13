@@ -12,6 +12,8 @@ import (
 	"github.com/antchfx/xmlquery"
 )
 
+var badManifestValue = "???????"
+
 // our interface
 type CacheWriter interface {
 	Cache(*awssqs.Message) error
@@ -42,12 +44,19 @@ func (c *cacheImpl) Cache(message *awssqs.Message) error {
 	manifestUrl, err := c.extractManifestUrl( message.Payload )
 	if err == nil {
 
-		// did we extract a manifest URL
-		if len( manifestUrl ) != 0 {
+		// did we extract a manifest URL that makes sense
+		if len( manifestUrl ) != 0 && strings.Contains( manifestUrl, badManifestValue ) == false {
+
+			// TEMP ONLY
+			//manifestUrl = strings.Replace( manifestUrl, "https://iiifman.lib.virginia.edu", "https://iiif-manifest-dev.internal.lib.virginia.edu", 1 );
+
 			newUrl, err := c.writeManifestToCache( manifestUrl )
 
 			// if successful, update the payload with the new URL
 			if err == nil {
+
+				log.Printf( "INFO: Rewriting manifest URL from %s -> %s", manifestUrl, newUrl )
+
 				payload := string( message.Payload )
 				payload = strings.Replace( payload,
 					fmt.Sprintf( ">%s<", manifestUrl ),
