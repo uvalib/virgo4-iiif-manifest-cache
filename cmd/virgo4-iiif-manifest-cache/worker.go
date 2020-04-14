@@ -94,23 +94,23 @@ func processesInboundBlock(cacheWriter CacheWriter, aws awssqs.AWS_SQS, inboundM
 
 	// keep a list of the ones that succeed/fail
 	finalStatus := make([]awssqs.OpStatus, len(inboundMessages))
-	enrichStatus := make([]awssqs.OpStatus, len(inboundMessages))
+	cacheStatus := make([]awssqs.OpStatus, len(inboundMessages))
 
 	//log.Printf("%d records to process", len(inboundMessages))
 
-	// enrich as much as possible, in the event of an error, dont process the document further
+	// process as much as possible, in the event of an error, dont process the document further
 	for ix := range inboundMessages {
 		err := cacheWriter.Cache(&inboundMessages[ix])
 
-		// for now, we still want to process records that failed enrichment
-		enrichStatus[ix] = true
+		// determine success so we remove the message from the queue or not
+		cacheStatus[ix] = err == nil
 
 		if err != nil {
 			id, found := inboundMessages[ix].GetAttribute(awssqs.AttributeKeyRecordId)
 			if found == false {
-				log.Printf("WARNING: enrich failed for message %d (%s)", ix, err)
+				log.Printf("WARNING: manifest caching failed for message %d (%s)", ix, err)
 			} else {
-				log.Printf("WARNING: enrich failed for id %s (%s)", id, err)
+				log.Printf("WARNING: manifest caching failed for id %s (%s)", id, err)
 			}
 		}
 	}
@@ -125,8 +125,8 @@ func processesInboundBlock(cacheWriter CacheWriter, aws awssqs.AWS_SQS, inboundM
 	outboundMessages := make([]awssqs.Message, 0, len(inboundMessages))
 
 	for ix := range inboundMessages {
-		// as long as the enrichment succeeded...
-		if enrichStatus[ix] == true {
+		// as long as the caching succeeded...
+		if cacheStatus[ix] == true {
 			outboundMessages = append(outboundMessages, *inboundMessages[ix].ContentClone())
 		}
 	}
@@ -147,15 +147,15 @@ func processesInboundBlock(cacheWriter CacheWriter, aws awssqs.AWS_SQS, inboundM
 		}
 	}
 
-	// we need to construct an array of results based on the operations performed, enrich and a put to the queue
-	enrichErrors := 0
-	for ix, v := range enrichStatus {
+	// we need to construct an array of results based on the operations performed, cache and a put to the queue
+	cacheErrors := 0
+	for ix, v := range cacheStatus {
 		finalStatus[ix] = true
 		if v == false {
 			finalStatus[ix] = false
-			enrichErrors++
+			cacheErrors++
 		} else {
-			if putStatus[ix-enrichErrors] == false {
+			if putStatus[ix-cacheErrors] == false {
 				finalStatus[ix] = false
 			}
 		}
