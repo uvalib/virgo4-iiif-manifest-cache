@@ -74,9 +74,10 @@ func (c *cacheImpl) Cache(message *awssqs.Message) error {
 
 func (c *cacheImpl) writeManifestToCache( url string ) ( string, error ) {
 
+	var body []byte
 	bucketKey, err := c.makeBucketKey( url )
 	if err == nil {
-	    body, err := httpGet(url, c.httpClient)
+	    body, err = httpGet(url, c.httpClient)
 	    if err == nil {
 	    	err = s3Add( c.cacheBucket, bucketKey, body )
 	    	if err == nil {
@@ -84,10 +85,10 @@ func (c *cacheImpl) writeManifestToCache( url string ) ( string, error ) {
 	    		return newUrl, nil
 			}
    	    } else {
-		    log.Printf("ERROR: endpoint %s returns %s", url, err)
+		    log.Printf("ERROR: endpoint %s returns: %s", url, err)
 	    }
 	} else {
-		log.Printf("ERROR: parsing URL %s returns %s", url, err)
+		log.Printf("ERROR: parsing URL %s returns: %s", url, err)
 	}
 
 	return "", err
