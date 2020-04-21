@@ -23,10 +23,12 @@ func main() {
 	fatalIfError(err)
 
 	// get the queue handles from the queue name
-	inQueueHandle, err := aws.QueueHandle(cfg.InQueueName)
+	var inQueueHandle awssqs.QueueHandle
+	inQueueHandle, err = aws.QueueHandle(cfg.InQueueName)
 	fatalIfError(err)
 
-	outQueueHandle, err := aws.QueueHandle(cfg.OutQueueName)
+	var outQueueHandle awssqs.QueueHandle
+	outQueueHandle, err = aws.QueueHandle(cfg.OutQueueName)
 	fatalIfError(err)
 
 	// create the record channel
@@ -40,7 +42,8 @@ func main() {
 	for {
 
 		// wait for a batch of messages
-		messages, err := aws.BatchMessageGet(inQueueHandle, awssqs.MAX_SQS_BLOCK_COUNT, time.Duration(cfg.PollTimeOut)*time.Second)
+		var messages []awssqs.Message
+		messages, err = aws.BatchMessageGet(inQueueHandle, awssqs.MAX_SQS_BLOCK_COUNT, time.Duration(cfg.PollTimeOut)*time.Second)
 		fatalIfError(err)
 
 		// did we receive any?

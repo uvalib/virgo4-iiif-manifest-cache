@@ -6,12 +6,10 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 )
 
 var uploader *s3manager.Uploader
-var s3service *s3.S3
 
 // set up our S3 management objects
 func init() {
@@ -19,7 +17,6 @@ func init() {
 	sess, err := session.NewSession()
 	if err == nil {
 		uploader = s3manager.NewUploader(sess)
-		s3service = s3.New(sess)
 	}
 }
 

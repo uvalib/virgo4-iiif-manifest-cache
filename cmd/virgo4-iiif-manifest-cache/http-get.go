@@ -61,14 +61,15 @@ func httpGet(url string, client *http.Client) ([]byte, error) {
 
 			defer response.Body.Close()
 
+			var body []byte
 			if response.StatusCode != http.StatusOK {
 				log.Printf("ERROR: GET failed with status %d", response.StatusCode)
 
-				body, _ := ioutil.ReadAll(response.Body)
+				body, _ = ioutil.ReadAll(response.Body)
 
 				return body, fmt.Errorf("request returns HTTP %d", response.StatusCode)
 			} else {
-				body, err := ioutil.ReadAll(response.Body)
+				body, err = ioutil.ReadAll(response.Body)
 				if err != nil {
 					return nil, err
 				}

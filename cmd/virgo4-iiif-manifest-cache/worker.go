@@ -173,7 +173,8 @@ func processesInboundBlock(cacheWriter CacheWriter, aws awssqs.AWS_SQS, inboundM
 	//log.Printf("%d records to delete", len(deleteMessages))
 
 	// delete the ones that succeeded
-	delStatus, err := aws.BatchMessageDelete(inQueue, deleteMessages)
+	var delStatus []awssqs.OpStatus
+	delStatus, err = aws.BatchMessageDelete(inQueue, deleteMessages)
 	if err != nil {
 		if err != awssqs.ErrOneOrMoreOperationsUnsuccessful {
 			return emptyOpList, err
