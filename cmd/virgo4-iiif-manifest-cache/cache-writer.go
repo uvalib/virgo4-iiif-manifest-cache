@@ -12,7 +12,8 @@ import (
 	"github.com/uvalib/virgo4-sqs-sdk/awssqs"
 )
 
-var badManifestValue = "???????"
+// ErrBadUrl - a bad record encountered
+var ErrBadUrl = fmt.Errorf("bad manifest cache Url encountered")
 
 // CacheWriter - our interface
 type CacheWriter interface {
@@ -45,7 +46,7 @@ func (c *cacheImpl) Cache(message *awssqs.Message) error {
 	if err == nil {
 
 		// did we extract a manifest URL that makes sense
-		if len(manifestUrl) != 0 && strings.Contains(manifestUrl, badManifestValue) == false {
+		if len(manifestUrl) != 0 && c.goodUrl(manifestUrl) == true {
 
 			// TEMP ONLY
 			//manifestUrl = strings.Replace( manifestUrl, "https://iiifman.lib.virginia.edu", "https://iiif-manifest-dev.internal.lib.virginia.edu", 1 );
@@ -65,6 +66,9 @@ func (c *cacheImpl) Cache(message *awssqs.Message) error {
 					fmt.Sprintf(">%s<", newUrl), 1)
 				message.Payload = []byte(payload)
 			}
+		} else {
+			log.Printf("ERROR: empty or nonsensical URL [%s], no caching possible", manifestUrl)
+			err = ErrBadUrl
 		}
 	} else {
 		log.Printf("ERROR: parsing document, no caching possible: %s", err.Error())
@@ -130,6 +134,12 @@ func (c *cacheImpl) makeBucketKey(sourceUrl string) (string, error) {
 	key = strings.ReplaceAll(key, ":", "-")
 	return key, nil
 
+}
+
+// simple function to validate the manifest cache url
+func (c *cacheImpl) goodUrl(str string) bool {
+	u, err := url.Parse(str)
+	return err == nil && u.Scheme != "" && u.Host != ""
 }
 
 //
