@@ -103,7 +103,9 @@ func processesInboundBlock(cacheWriter CacheWriter, aws awssqs.AWS_SQS, inboundM
 		err := cacheWriter.Cache(&inboundMessages[ix])
 
 		// determine success so we remove the message from the queue or not
-		cacheStatus[ix] = err == nil
+		//cacheStatus[ix] = err == nil
+		// ignore failures for now, always process as success even if we did not cache a manifest
+		cacheStatus[ix] = true
 
 		if err != nil {
 			id, found := inboundMessages[ix].GetAttribute(awssqs.AttributeKeyRecordId)
