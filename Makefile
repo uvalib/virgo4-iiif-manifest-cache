@@ -36,6 +36,6 @@ vet:
 
 check:
 	go install honnef.co/go/tools/cmd/staticcheck
-	$(HOME)/go/bin/staticcheck -checks all,-S1002,-ST1003 cmd/$(PACKAGENAME)/*.go
+	$(HOME)/go/bin/staticcheck -checks all,-S1002,-ST1003,-S1008 cmd/$(PACKAGENAME)/*.go
 	go install golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow
 	$(GOVET) -vettool=$(HOME)/go/bin/shadow ./cmd/$(PACKAGENAME)/...
